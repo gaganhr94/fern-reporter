@@ -327,9 +327,14 @@ func (h *UserHandler) GetPreferredProject(c *gin.Context) {
 
 	// Step 3: Group projects by group ID
 	groupMap := make(map[uint64]*GroupedProjects)
+	var ungroupedProjects []ProjectSummary
 	for _, item := range preferred {
 		if item.Group == nil {
-			continue // skip ungrouped if needed
+			ungroupedProjects = append(ungroupedProjects, ProjectSummary{
+				UUID: item.Project.UUID,
+				Name: item.Project.Name,
+			})
+			continue
 		}
 
 		groupID := item.Group.GroupID
@@ -353,7 +358,16 @@ func (h *UserHandler) GetPreferredProject(c *gin.Context) {
 		grouped = append(grouped, *group)
 	}
 
-	// Step 5: Return response
+	// Step 5: Add ungrouped projects to the response
+	if len(ungroupedProjects) > 0 {
+		grouped = append(grouped, GroupedProjects{
+			GroupID:   0, // Use 0 or another identifier for ungrouped projects
+			GroupName: "Ungrouped",
+			Projects:  ungroupedProjects,
+		})
+	}
+
+	// Step 6: Return response
 	response := PreferenceResponse{
 		Cookie:    user.Cookie,
 		Preferred: grouped,
